@@ -2,12 +2,17 @@ package com.example.realmpoc
 
 import android.app.Activity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import io.realm.Realm
+import io.realm.RealmChangeListener
 import io.realm.RealmObject
+import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import io.realm.annotations.RealmClass
 import io.realm.kotlin.where
@@ -17,8 +22,13 @@ import io.realm.mongodb.Credentials
 import io.realm.mongodb.User
 import io.realm.mongodb.sync.SyncConfiguration
 import org.bson.types.ObjectId
+import java.lang.Exception
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.FutureTask
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var realm: Realm
     private lateinit var app: App
     private lateinit var listView: ListView
 
@@ -40,30 +50,26 @@ class MainActivity : AppCompatActivity() {
                 val user = app.currentUser()!!
                 val partition = "61c058e5559668e69ad62a8d"
 
-                val config = SyncConfiguration.Builder(user, partition)
-                    .allowQueriesOnUiThread(true)
-                    .build()
-                val realmInstance = Realm.getInstance(config)
-                Log.i("INSTANCE", "Successfully initialized instance.")
-
-                val surgeries = realmInstance
-                    .where<Surgery>()
-                    .findAll()
-                val list: MutableList<String> = mutableListOf()
-                surgeries.forEachIndexed { index, surgery ->
-                    list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
+                try {
+                    val config = SyncConfiguration.Builder(user, partition).build()
+                    realm = Realm.getInstance(config)
+                    val model = SurgeriesViewModel()
+                    model.getSurgeries(realm).observe(this) { surgeries ->
+                        val list: MutableList<String> = mutableListOf()
+                        surgeries.forEachIndexed { index, surgery ->
+                            list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
+                        }
+                        val adapter = ArrayAdapter(
+                            this,
+                            android.R.layout.simple_list_item_1,
+                            list
+                        )
+                        listView.adapter = adapter
+                    }
                 }
-
-                val adapter = ArrayAdapter(
-                    this,
-                    android.R.layout.simple_list_item_1,
-                    list
-                )
-                listView.adapter = adapter
-
-//                val task : FutureTask<String> = FutureTask(Background(user, partition, this, listView), "test")
-//                val executorService: ExecutorService = Executors.newFixedThreadPool(1)
-//                executorService.execute(task)
+                catch (ex: Exception) {
+                    ex.message?.let { it1 -> Log.e("EX", it1) }
+                }
             } else {
                 Log.e("USER", "Failed to log in. Error: ${it.error}")
             }
@@ -72,6 +78,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        realm.close()
         app.currentUser()?.logOutAsync {
             if (it.isSuccess) {
                 Log.i("USER", "Successfully logged out.")
@@ -80,43 +87,5 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    class Background(private val user: User, private val partition: String, private val context: Activity, private val listView: ListView) : Runnable {
-        override fun run() {
-            val config = SyncConfiguration.Builder(user, partition).build()
-            val backgroundThreadRealm = Realm.getInstance(config)
-            Log.i("INSTANCE", "Successfully initialized instance.")
-
-            val surgeries = backgroundThreadRealm
-                .where<Surgery>()
-                .limit(10)
-                .findAll()
-
-            val list: MutableList<String> = mutableListOf()
-            for (surgery in surgeries) {
-                Log.i("ITEM", "Document _id: ${surgery._id}.")
-
-                list.add("Procedure: ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
-            }
-            val adapter = ArrayAdapter(
-                context,
-                android.R.layout.simple_list_item_1,
-                list
-            )
-            listView.adapter = adapter
-            backgroundThreadRealm.close()
-        }
-    }
 }
 
-open class Surgery : RealmObject() {
-    @PrimaryKey
-    var _id = ObjectId()
-    var Procedure: Surgery_Procedure? = null
-}
-
-@RealmClass(embedded = true)
-open class Surgery_Procedure : RealmObject() {
-    var Code: String? = null
-    var Name: String? = null
-}
