@@ -63,22 +63,22 @@ class MainActivity : AppCompatActivity() {
                                 realm.syncSession.downloadAllServerChanges()
                             }
 
-                            surgeries = realm.where<Surgery>().findAllAsync()
-
-                            surgeries.addChangeListener{ collection ->
-                                Log.v("COLLECTION", "Successfully fetched collection. Count: ${collection.size}")
-
-                                val list: MutableList<String> = mutableListOf()
-                                collection.forEachIndexed { index, surgery ->
-                                    list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
-                                }
-                                val adapter = ArrayAdapter(
-                                    context,
-                                    android.R.layout.simple_list_item_1,
-                                    list
-                                )
-                                listView.adapter = adapter
-                            }
+//                            surgeries = realm.where<Surgery>().findAllAsync()
+//
+//                            surgeries.addChangeListener{ collection ->
+//                                Log.v("COLLECTION", "Successfully fetched collection. Count: ${collection.size}")
+//
+//                                val list: MutableList<String> = mutableListOf()
+//                                collection.forEachIndexed { index, surgery ->
+//                                    list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
+//                                }
+//                                val adapter = ArrayAdapter(
+//                                    context,
+//                                    android.R.layout.simple_list_item_1,
+//                                    list
+//                                )
+//                                listView.adapter = adapter
+//                            }
                         }
                     })
                 }
