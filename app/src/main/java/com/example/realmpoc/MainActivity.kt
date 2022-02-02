@@ -1,35 +1,22 @@
 package com.example.realmpoc
 
-import android.app.Activity
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import io.realm.Realm
-import io.realm.RealmChangeListener
-import io.realm.RealmObject
 import io.realm.RealmResults
-import io.realm.annotations.PrimaryKey
-import io.realm.annotations.RealmClass
 import io.realm.kotlin.where
 import io.realm.mongodb.App
 import io.realm.mongodb.AppConfiguration
 import io.realm.mongodb.Credentials
-import io.realm.mongodb.User
 import io.realm.mongodb.sync.SyncConfiguration
-import org.bson.types.ObjectId
-import java.lang.Exception
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.FutureTask
 
 class MainActivity : AppCompatActivity() {
     private lateinit var realm: Realm
     private lateinit var app: App
+    private lateinit var surgeries: RealmResults<Surgery>
     private lateinit var listView: ListView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         app = App(AppConfiguration.Builder(appID)
             .build())
         val credentials: Credentials = Credentials.emailPassword("admin12@example.com", "admin12")
-
+        val context = this
         app.loginAsync(credentials) {
             if (it.isSuccess) {
                 Log.i("AUTH", "Successfully authenticated.")
@@ -51,21 +38,31 @@ class MainActivity : AppCompatActivity() {
                 val partition = "61c058e5559668e69ad62a8d"
 
                 try {
-                    val config = SyncConfiguration.Builder(user, partition).build()
-                    realm = Realm.getInstance(config)
-                    val model = SurgeriesViewModel()
-                    model.getSurgeries(realm).observe(this) { surgeries ->
-                        val list: MutableList<String> = mutableListOf()
-                        surgeries.forEachIndexed { index, surgery ->
-                            list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
+                    val config = SyncConfiguration
+                        .Builder(user, partition)
+                        .waitForInitialRemoteData()
+                        .build()
+
+                    Realm.getInstanceAsync(config, object : Realm.Callback() {
+                        override fun onSuccess(realm: Realm) {
+                            Log.v("INSTANCE", "Successfully fetched realm instance.")
+
+                            surgeries = realm.where<Surgery>().findAllAsync()
+                            surgeries.addChangeListener{ collection ->
+                                Log.v("COLLECTION", "Successfully fetched collection. Count: ${collection.size}.")
+                                val list: MutableList<String> = mutableListOf()
+                                collection.forEachIndexed { index, surgery ->
+                                    list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
+                                }
+                                val adapter = ArrayAdapter(
+                                    context,
+                                    android.R.layout.simple_list_item_1,
+                                    list
+                                )
+                                listView.adapter = adapter
+                            }
                         }
-                        val adapter = ArrayAdapter(
-                            this,
-                            android.R.layout.simple_list_item_1,
-                            list
-                        )
-                        listView.adapter = adapter
-                    }
+                    })
                 }
                 catch (ex: Exception) {
                     ex.message?.let { it1 -> Log.e("EX", it1) }
