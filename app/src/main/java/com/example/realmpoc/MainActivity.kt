@@ -7,11 +7,14 @@ import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
 import io.realm.RealmResults
+import io.realm.kotlin.syncSession
 import io.realm.kotlin.where
 import io.realm.mongodb.App
 import io.realm.mongodb.AppConfiguration
 import io.realm.mongodb.Credentials
+import io.realm.mongodb.sync.ProgressMode
 import io.realm.mongodb.sync.SyncConfiguration
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
     private lateinit var realm: Realm
@@ -40,16 +43,31 @@ class MainActivity : AppCompatActivity() {
                 try {
                     val config = SyncConfiguration
                         .Builder(user, partition)
-                        .waitForInitialRemoteData()
+                        //.waitForInitialRemoteData()
                         .build()
 
                     Realm.getInstanceAsync(config, object : Realm.Callback() {
                         override fun onSuccess(realm: Realm) {
                             Log.v("INSTANCE", "Successfully fetched realm instance.")
 
+                            var previousTime = System.currentTimeMillis()
+                            realm.syncSession.addDownloadProgressListener(
+                                ProgressMode.INDEFINITELY) { progress ->
+                                val currentTime = System.currentTimeMillis()
+                                val elapsedTime = (currentTime - previousTime) / 1000
+                                Log.v("SYNC", "Download progress: ${progress.fractionTransferred}. Elapsed time: $elapsedTime s.")
+                                previousTime = currentTime
+                            }
+
+                            thread(start = true) {
+                                realm.syncSession.downloadAllServerChanges()
+                            }
+
                             surgeries = realm.where<Surgery>().findAllAsync()
+
                             surgeries.addChangeListener{ collection ->
-                                Log.v("COLLECTION", "Successfully fetched collection. Count: ${collection.size}.")
+                                Log.v("COLLECTION", "Successfully fetched collection. Count: ${collection.size}")
+
                                 val list: MutableList<String> = mutableListOf()
                                 collection.forEachIndexed { index, surgery ->
                                     list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
