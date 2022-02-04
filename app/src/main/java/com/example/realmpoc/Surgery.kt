@@ -36,9 +36,3 @@ open class Surgery(
     var TotalCostIncludingVat: Double? = null,
     var _partition: String = ""
 ): RealmObject() {}
-
-@RealmClass(embedded = true)
-open class Surgery_Procedure : RealmObject() {
-    var Code: String? = null
-    var Name: String? = null
-}

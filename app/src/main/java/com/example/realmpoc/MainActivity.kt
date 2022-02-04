@@ -16,7 +16,6 @@ import io.realm.mongodb.AppConfiguration
 import io.realm.mongodb.Credentials
 import io.realm.mongodb.sync.ProgressMode
 import io.realm.mongodb.sync.SyncConfiguration
-import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
     private lateinit var realm: Realm
@@ -47,13 +46,13 @@ class MainActivity : AppCompatActivity() {
                 try {
                     val config = SyncConfiguration
                         .Builder(user, partition)
-                        //.waitForInitialRemoteData()
                         .build()
 
                     var total : Long = 0
 
                     Realm.getInstanceAsync(config, object : Realm.Callback() {
                         override fun onSuccess(realm: Realm) {
+                            context.realm = realm
                             Log.v("INSTANCE", "Successfully fetched realm instance.")
 
                             var previousTime = System.currentTimeMillis()
@@ -67,12 +66,8 @@ class MainActivity : AppCompatActivity() {
 
                                 if (progress.isTransferComplete) {
                                     Log.v("SYNC", "Total time: $total s.")
-                                    loader.visibility = View.INVISIBLE;
+                                    loader.visibility = View.INVISIBLE
                                 }
-                            }
-
-                            thread(start = true) {
-                                realm.syncSession.downloadAllServerChanges()
                             }
 
                             surgeries = realm.where<Surgery>().findAllAsync()
