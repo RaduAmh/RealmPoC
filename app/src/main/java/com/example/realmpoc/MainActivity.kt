@@ -2,8 +2,10 @@ package com.example.realmpoc
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
 import io.realm.RealmResults
@@ -21,15 +23,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var app: App
     private lateinit var surgeries: RealmResults<Surgery>
     private lateinit var listView: ListView
+    private lateinit var loader: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         listView = findViewById(R.id.list_view)
+        loader = findViewById(R.id.myProgressBar)
 
         Realm.init(this)
-        val appID = "application-0-dlnlk"
+        val appID = ""
         app = App(AppConfiguration.Builder(appID)
             .build())
         val credentials: Credentials = Credentials.emailPassword("admin12@example.com", "admin12")
@@ -63,6 +67,7 @@ class MainActivity : AppCompatActivity() {
 
                                 if (progress.isTransferComplete) {
                                     Log.v("SYNC", "Total time: $total s.")
+                                    loader.visibility = View.INVISIBLE;
                                 }
                             }
 
@@ -70,22 +75,22 @@ class MainActivity : AppCompatActivity() {
                                 realm.syncSession.downloadAllServerChanges()
                             }
 
-//                            surgeries = realm.where<Surgery>().findAllAsync()
-//
-//                            surgeries.addChangeListener{ collection ->
-//                                Log.v("COLLECTION", "Successfully fetched collection. Count: ${collection.size}")
-//
-//                                val list: MutableList<String> = mutableListOf()
-//                                collection.forEachIndexed { index, surgery ->
-//                                    list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
-//                                }
-//                                val adapter = ArrayAdapter(
-//                                    context,
-//                                    android.R.layout.simple_list_item_1,
-//                                    list
-//                                )
-//                                listView.adapter = adapter
-//                            }
+                            surgeries = realm.where<Surgery>().findAllAsync()
+
+                            surgeries.addChangeListener{ collection ->
+                                Log.v("COLLECTION", "Successfully fetched collection. Count: ${collection.size}")
+
+                                val list: MutableList<String> = mutableListOf()
+                                collection.forEachIndexed { index, surgery ->
+                                    list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
+                                }
+                                val adapter = ArrayAdapter(
+                                    context,
+                                    android.R.layout.simple_list_item_1,
+                                    list
+                                )
+                                listView.adapter = adapter
+                            }
                         }
                     })
                 }
