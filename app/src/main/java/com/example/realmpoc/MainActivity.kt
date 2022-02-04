@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
         listView = findViewById(R.id.list_view)
 
         Realm.init(this)
-        val appID = "application-0-ltvro"
+        val appID = "application-0-dlnlk"
         app = App(AppConfiguration.Builder(appID)
             .build())
         val credentials: Credentials = Credentials.emailPassword("admin12@example.com", "admin12")
@@ -46,6 +46,8 @@ class MainActivity : AppCompatActivity() {
                         //.waitForInitialRemoteData()
                         .build()
 
+                    var total : Long = 0
+
                     Realm.getInstanceAsync(config, object : Realm.Callback() {
                         override fun onSuccess(realm: Realm) {
                             Log.v("INSTANCE", "Successfully fetched realm instance.")
@@ -55,8 +57,13 @@ class MainActivity : AppCompatActivity() {
                                 ProgressMode.INDEFINITELY) { progress ->
                                 val currentTime = System.currentTimeMillis()
                                 val elapsedTime = (currentTime - previousTime) / 1000
+                                total += elapsedTime
                                 Log.v("SYNC", "Download progress: ${progress.fractionTransferred}. Elapsed time: $elapsedTime s.")
                                 previousTime = currentTime
+
+                                if (progress.isTransferComplete) {
+                                    Log.v("SYNC", "Total time: $total s.")
+                                }
                             }
 
                             thread(start = true) {

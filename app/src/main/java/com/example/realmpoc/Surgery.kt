@@ -7,7 +7,7 @@ import org.bson.types.ObjectId
 
 open class Surgery : RealmObject() {
     @PrimaryKey
-    var _id = ObjectId()
+    var _id: ObjectId? = null
     var Procedure: Surgery_Procedure? = null
 }
 
