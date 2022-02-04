@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
 
                                 val list: MutableList<String> = mutableListOf()
                                 collection.forEachIndexed { index, surgery ->
-                                    list.add("${index + 1}. ${surgery.Procedure?.Code} ${surgery.Procedure?.Name}")
+                                    list.add("${index + 1}. ${surgery.ProcedureCode} ${surgery.ProcedureName}")
                                 }
                                 val adapter = ArrayAdapter(
                                     context,
