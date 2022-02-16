@@ -15,15 +15,17 @@ import io.realm.mongodb.Credentials
 import io.realm.mongodb.sync.ProgressMode
 import io.realm.mongodb.sync.SyncConfiguration
 import kotlin.concurrent.thread
+import kotlin.system.exitProcess
 
 class MainActivity : AppCompatActivity() {
     private lateinit var app: App
     private lateinit var textView: TextView
-    private lateinit var button: Button
+    private lateinit var buttonSync: Button
+    private lateinit var buttonClose: Button
     private lateinit var loader: ProgressBar
     private val viewModel = SyncViewModel()
     private var realm: Realm? = null
-    private val partition = "61c058e5559668e69ad62a8e"
+    private val partition = "61c058e5559668e69ad62a8d"
     private val appId = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,21 +34,27 @@ class MainActivity : AppCompatActivity() {
 
         loader = findViewById(R.id.myProgressBar)
         textView = findViewById(R.id.sample_text)
-        button = findViewById(R.id.button)
+        buttonSync = findViewById(R.id.button_sync)
+        buttonClose = findViewById(R.id.button_close)
 
         loader.visibility = View.INVISIBLE
         viewModel.status.observe(this) { text ->
             textView.text = text
             if (text.contains("Status: synced") || text.contains("Error")) {
-                button.isEnabled = true
-                button.isClickable = true
+                buttonSync.isEnabled = true
+                buttonSync.isClickable = true
                 loader.visibility = View.INVISIBLE
             }
         }
-        button.setOnClickListener {
-            button.isEnabled = false
-            button.isClickable = false
+        buttonSync.setOnClickListener {
+            buttonSync.isEnabled = false
+            buttonSync.isClickable = false
             initRealm()
+        }
+
+        buttonClose.setOnClickListener {
+            finishAndRemoveTask()
+            exitProcess(0)
         }
     }
 
